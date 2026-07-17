@@ -10,7 +10,7 @@
     "prebuild": "npm run clean",
     "build": "tsc",
     "prestart": "npm run build",
-    "start": "node --env-file=.env dist/app.js",
+    "start": "node dist/app.js",
     "typecheck": "tsc --noEmit"
   },
   "imports": {
