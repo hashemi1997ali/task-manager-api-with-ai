@@ -44,6 +44,8 @@
     }
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.112.1",
+    "@google/genai": "^2.12.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.10.0",
     "cookie-parser": "^1.4.7",
@@ -52,6 +54,9 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.7.4",
     "multer": "^2.2.0",
+    "openai": "^6.48.0",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -61,6 +66,8 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^24.0.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "typescript": "^5.8.3"
   }
 }

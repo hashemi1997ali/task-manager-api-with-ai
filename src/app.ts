@@ -3,7 +3,7 @@ import express from "express";
 
 import "#db";
 import { errorHandler, notFound, timeLogger } from "#middlewares";
-import { authRouter, taskRouter } from "#routers";
+import { authRouter, docsRouter, taskRouter } from "#routers";
 
 const app = express();
 const port = Number(process.env.PORT) || 3000;
@@ -23,10 +23,17 @@ app.get("/", (_request, response) => {
 
 app.use("/auth", authRouter);
 app.use("/tasks", taskRouter);
+app.use("/docs", docsRouter);
 
 app.use(notFound);
 app.use(errorHandler);
 
 app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
+  console.log(`\x1b[35mServer is running at http://localhost:${port}\x1b[0m`);
+  console.log(
+    `\x1b[36mOpenAPI JSON served at  http://localhost:${port}/docs/openapi.json\x1b[0m`,
+  );
+  console.log(
+    `\x1b[33mSwagger UI served at http://localhost:${port}/docs\x1b[0m`,
+  );
 });

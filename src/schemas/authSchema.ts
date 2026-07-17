@@ -1,5 +1,53 @@
 import { z } from "zod";
 
+/**
+ * @openapi
+ * components:
+ *   schemas:
+ *     RegisterInput:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [firstName, lastName, email, password]
+ *       properties:
+ *         firstName:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *           example: Sara
+ *         lastName:
+ *           type: string
+ *           minLength: 2
+ *           maxLength: 50
+ *           example: Ahmadi
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: sara@example.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           minLength: 8
+ *           maxLength: 72
+ *           writeOnly: true
+ *           description: Must contain a lowercase letter, an uppercase letter and a number.
+ *           example: StrongPass1
+ *     LoginInput:
+ *       type: object
+ *       additionalProperties: false
+ *       required: [email, password]
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *           example: sara@example.com
+ *         password:
+ *           type: string
+ *           format: password
+ *           minLength: 1
+ *           writeOnly: true
+ *           example: StrongPass1
+ */
+
 const passwordSchema = z
   .string()
   .min(8, "Password must be at least 8 characters long")

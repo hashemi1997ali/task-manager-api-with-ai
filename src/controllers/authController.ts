@@ -38,6 +38,35 @@ const issueTokens = (
   return accessToken;
 };
 
+/**
+ * @openapi
+ * /auth/register:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Register a new account
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterInput'
+ *     responses:
+ *       '201':
+ *         description: Account created successfully. A refresh token is set as an HTTP-only cookie.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationFailed'
+ *       '409':
+ *         $ref: '#/components/responses/Conflict'
+ */
+
 export const register: RequestHandler = async (request, response) => {
   const { firstName, lastName, email, password } = request.body;
 
@@ -57,6 +86,35 @@ export const register: RequestHandler = async (request, response) => {
   });
 };
 
+/**
+ * @openapi
+ * /auth/login:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Log in with email and password
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginInput'
+ *     responses:
+ *       '200':
+ *         description: Login successful. A refresh token is set as an HTTP-only cookie.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       '400':
+ *         $ref: '#/components/responses/ValidationFailed'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export const login: RequestHandler = async (request, response) => {
   const { email, password } = request.body;
 
@@ -75,6 +133,27 @@ export const login: RequestHandler = async (request, response) => {
   });
 };
 
+/**
+ * @openapi
+ * /auth/me:
+ *   get:
+ *     tags: [Authentication]
+ *     summary: Get the authenticated user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: The authenticated user.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/CurrentUserResponse'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '404':
+ *         $ref: '#/components/responses/NotFound'
+ */
+
 export const getMe: RequestHandler = async (request, response) => {
   const user = await User.findById(request.user?.userId);
 
@@ -87,6 +166,30 @@ export const getMe: RequestHandler = async (request, response) => {
     data: { user: serializeUser(user) },
   });
 };
+
+/**
+ * @openapi
+ * /auth/refresh:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Refresh the access token
+ *     description: Uses the HTTP-only refreshToken cookie and rotates it on success.
+ *     security:
+ *       - refreshToken: []
+ *     responses:
+ *       '200':
+ *         description: Access token refreshed successfully.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AccessTokenResponse'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 
 export const refreshAccessToken: RequestHandler = async (
   request,
@@ -107,6 +210,25 @@ export const refreshAccessToken: RequestHandler = async (
     data: { accessToken },
   });
 };
+
+/**
+ * @openapi
+ * /auth/logout:
+ *   post:
+ *     tags: [Authentication]
+ *     summary: Log out and clear the refresh-token cookie
+ *     responses:
+ *       '200':
+ *         description: Logged out successfully.
+ *         headers:
+ *           Set-Cookie:
+ *             schema:
+ *               type: string
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ */
 
 export const logout: RequestHandler = (_request, response) => {
   clearRefreshTokenCookie(response);

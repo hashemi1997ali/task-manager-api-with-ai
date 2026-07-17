@@ -50,6 +50,104 @@ const createAttachment = async (file: Express.Multer.File | undefined) => {
   };
 };
 
+/**
+ * @openapi
+ * /tasks:
+ *   get:
+ *     tags: [Tasks]
+ *     summary: List the authenticated user's tasks
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: status
+ *         in: query
+ *         schema:
+ *           type: string
+ *           enum: [todo, in-progress, done]
+ *       - name: priority
+ *         in: query
+ *         schema:
+ *           type: string
+ *           enum: [low, medium, high]
+ *       - name: search
+ *         in: query
+ *         description: Case-insensitive search in title and description.
+ *         schema:
+ *           type: string
+ *       - name: dueBefore
+ *         in: query
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - name: dueAfter
+ *         in: query
+ *         schema:
+ *           type: string
+ *           format: date-time
+ *       - name: page
+ *         in: query
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - name: limit
+ *         in: query
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *       - name: sortBy
+ *         in: query
+ *         schema:
+ *           type: string
+ *           enum: [createdAt, updatedAt, dueDate, title, status]
+ *           default: createdAt
+ *       - name: order
+ *         in: query
+ *         schema:
+ *           type: string
+ *           enum: [asc, desc]
+ *           default: desc
+ *     responses:
+ *       '200':
+ *         description: A paginated task list.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TaskListResponse'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *   post:
+ *     tags: [Tasks]
+ *     summary: Create a task
+ *     description: The optional attachment may be JPG, PNG, WEBP, PDF or TXT and cannot exceed 5 MB.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateTaskInput'
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateTaskMultipartInput'
+ *     responses:
+ *       '201':
+ *         description: Task created successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TaskResponse'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ */
+
 export const createTask: RequestHandler = async (request, response) => {
   const owner = requireUserId(request.user?.userId);
   const attachment = await createAttachment(request.file);
@@ -182,6 +280,83 @@ export const getTasks: RequestHandler = async (request, response) => {
   });
 };
 
+/**
+ * @openapi
+ * /tasks/{id}:
+ *   parameters:
+ *     - name: id
+ *       in: path
+ *       required: true
+ *       description: MongoDB task ID.
+ *       schema:
+ *         type: string
+ *         pattern: '^[a-fA-F0-9]{24}$'
+ *   get:
+ *     tags: [Tasks]
+ *     summary: Get one task
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: The requested task.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TaskResponse'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '404':
+ *         $ref: '#/components/responses/NotFound'
+ *   patch:
+ *     tags: [Tasks]
+ *     summary: Update a task
+ *     description: Send at least one task field or an attachment.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateTaskInput'
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateTaskMultipartInput'
+ *     responses:
+ *       '200':
+ *         description: Task updated successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TaskResponse'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '404':
+ *         $ref: '#/components/responses/NotFound'
+ *   delete:
+ *     tags: [Tasks]
+ *     summary: Delete a task
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Task deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '404':
+ *         $ref: '#/components/responses/NotFound'
+ */
+
 export const getTaskById: RequestHandler = async (request, response) => {
   const owner = requireUserId(request.user?.userId);
   const taskId = validateTaskId(request.params.id);
@@ -274,6 +449,37 @@ export const deleteTask: RequestHandler = async (request, response) => {
   });
 };
 
+/**
+ * @openapi
+ * /tasks/{id}/attachment:
+ *   delete:
+ *     tags: [Tasks]
+ *     summary: Delete a task attachment
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         required: true
+ *         description: MongoDB task ID.
+ *         schema:
+ *           type: string
+ *           pattern: '^[a-fA-F0-9]{24}$'
+ *     responses:
+ *       '200':
+ *         description: Attachment deleted successfully.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TaskResponse'
+ *       '400':
+ *         $ref: '#/components/responses/BadRequest'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '404':
+ *         $ref: '#/components/responses/NotFound'
+ */
+
 export const deleteTaskAttachment: RequestHandler = async (
   request,
   response,
@@ -305,6 +511,25 @@ export const deleteTaskAttachment: RequestHandler = async (
     data: { task },
   });
 };
+
+/**
+ * @openapi
+ * /tasks/summary:
+ *   get:
+ *     tags: [Tasks]
+ *     summary: Get task statistics for the authenticated user
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: Task counts grouped by status and priority, including overdue tasks.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/TaskSummaryResponse'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ */
 
 export const getTaskSummary: RequestHandler = async (request, response) => {
   const owner = requireUserId(request.user?.userId);
@@ -370,6 +595,28 @@ export const getTaskSummary: RequestHandler = async (request, response) => {
     },
   });
 };
+
+/**
+ * @openapi
+ * /tasks/admin/all:
+ *   get:
+ *     tags: [Tasks]
+ *     summary: List every task for administrators
+ *     description: Requires an authenticated user with the admin role.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       '200':
+ *         description: All tasks with populated owner details.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AdminTaskListResponse'
+ *       '401':
+ *         $ref: '#/components/responses/Unauthorized'
+ *       '403':
+ *         $ref: '#/components/responses/Forbidden'
+ */
 
 export const getAllTasksAdmin: RequestHandler = async (_request, response) => {
   const tasks = await Task.find()
