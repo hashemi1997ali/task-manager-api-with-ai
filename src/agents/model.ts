@@ -1,7 +1,4 @@
-import {
-  OpenAIChatCompletionsModel,
-  setTracingDisabled,
-} from "@openai/agents";
+import { OpenAIChatCompletionsModel, setTracingDisabled } from "@openai/agents";
 import OpenAI from "openai";
 import { AppError, getPositiveIntegerEnv, getRequiredEnv } from "#utils";
 
@@ -10,16 +7,16 @@ export type AiProvider = "ollama" | "anthropic";
 const providerValue = (process.env.AI_PROVIDER ?? "ollama").toLowerCase();
 
 if (providerValue !== "ollama" && providerValue !== "anthropic") {
-  throw new AppError(
-    "AI_PROVIDER must be either 'ollama' or 'anthropic'",
-    500,
-  );
+  throw new AppError("AI_PROVIDER must be either 'ollama' or 'anthropic'", 500);
 }
 
 export const aiProvider: AiProvider = providerValue;
 export const aiMaxTurns = getPositiveIntegerEnv("AI_MAX_TURNS", 10);
 
-const requestTimeoutMs = getPositiveIntegerEnv("AI_REQUEST_TIMEOUT_MS", 120_000);
+const requestTimeoutMs = getPositiveIntegerEnv(
+  "AI_REQUEST_TIMEOUT_MS",
+  120_000,
+);
 
 const createOllamaClient = (): { client: OpenAI; modelName: string } => ({
   client: new OpenAI({
@@ -33,8 +30,7 @@ const createOllamaClient = (): { client: OpenAI; modelName: string } => ({
 
 const createAnthropicClient = (): { client: OpenAI; modelName: string } => ({
   client: new OpenAI({
-    baseURL:
-      process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com/v1/",
+    baseURL: process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com/v1/",
     apiKey: getRequiredEnv("ANTHROPIC_API_KEY"),
     timeout: requestTimeoutMs,
     maxRetries: 2,
