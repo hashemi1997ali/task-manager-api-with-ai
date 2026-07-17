@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 import { TASK_PRIORITIES, TASK_STATUSES } from "#models";
 
 /**
@@ -24,17 +23,20 @@ import { TASK_PRIORITIES, TASK_STATUSES } from "#models";
  *           type: string
  *           enum: [todo, in-progress, done]
  *           default: todo
- *           example: todo
  *         priority:
  *           type: string
  *           enum: [low, medium, high]
  *           default: medium
- *           example: high
  *         dueDate:
  *           type: string
  *           format: date-time
  *           example: 2026-07-25T12:00:00+02:00
- *
+ *         estimatedMinutes:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 525600
+ *           nullable: true
+ *           example: 120
  *     UpdateTaskInput:
  *       type: object
  *       additionalProperties: false
@@ -43,27 +45,27 @@ import { TASK_PRIORITIES, TASK_STATUSES } from "#models";
  *           type: string
  *           minLength: 3
  *           maxLength: 100
- *           example: Complete API documentation
  *         description:
  *           type: string
  *           maxLength: 2000
- *           example: Update the Swagger documentation.
  *         status:
  *           type: string
  *           enum: [todo, in-progress, done]
- *           example: in-progress
  *         priority:
  *           type: string
  *           enum: [low, medium, high]
- *           example: medium
  *         dueDate:
  *           anyOf:
  *             - type: string
  *               format: date-time
  *             - type: 'null'
- *           example: 2026-07-30T12:00:00+02:00
+ *         estimatedMinutes:
+ *           anyOf:
+ *             - type: integer
+ *               minimum: 1
+ *               maximum: 525600
+ *             - type: 'null'
  */
-
 const dateSchema = z.iso
   .datetime({ offset: true })
   .transform((value) => new Date(value));
@@ -78,6 +80,19 @@ const nullableOptionalDateSchema = z.preprocess(
   z.union([dateSchema, z.null()]).optional(),
 );
 
+const optionalEstimatedMinutesSchema = z.preprocess(
+  (value) => (value === "" || value === undefined ? undefined : value),
+  z.coerce.number().int().positive().max(525_600).optional(),
+);
+
+const nullableOptionalEstimatedMinutesSchema = z.preprocess(
+  (value) => (value === "" ? null : value),
+  z.union([
+    z.coerce.number().int().positive().max(525_600),
+    z.null(),
+  ]).optional(),
+);
+
 export const createTaskSchema = z
   .object({
     title: z
@@ -85,19 +100,16 @@ export const createTaskSchema = z
       .trim()
       .min(3, "Task title must be at least 3 characters long")
       .max(100, "Task title cannot exceed 100 characters"),
-
     description: z
       .string()
       .trim()
       .max(2000, "Task description cannot exceed 2000 characters")
       .optional()
       .default(""),
-
     status: z.enum(TASK_STATUSES).optional().default("todo"),
-
     priority: z.enum(TASK_PRIORITIES).optional().default("medium"),
-
     dueDate: optionalDateSchema,
+    estimatedMinutes: optionalEstimatedMinutesSchema,
   })
   .strict();
 
@@ -109,18 +121,15 @@ export const updateTaskSchema = z
       .min(3, "Task title must be at least 3 characters long")
       .max(100, "Task title cannot exceed 100 characters")
       .optional(),
-
     description: z
       .string()
       .trim()
       .max(2000, "Task description cannot exceed 2000 characters")
       .optional(),
-
     status: z.enum(TASK_STATUSES).optional(),
-
     priority: z.enum(TASK_PRIORITIES).optional(),
-
     dueDate: nullableOptionalDateSchema,
+    estimatedMinutes: nullableOptionalEstimatedMinutesSchema,
   })
   .strict();
 

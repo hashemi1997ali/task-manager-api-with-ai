@@ -19,6 +19,7 @@ export interface ITask {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate?: Date | null;
+  estimatedMinutes?: number | null;
   completedAt?: Date | null;
   attachment?: TaskAttachment | null;
   owner: Types.ObjectId;
@@ -26,7 +27,7 @@ export interface ITask {
   updatedAt: Date;
 }
 
-const attachmentSchema = new Schema<TaskAttachment>(
+const attachmentSchema = new Schema(
   {
     url: { type: String, required: true },
     publicId: { type: String, required: true },
@@ -67,6 +68,12 @@ const taskSchema = new Schema<ITask>(
       type: Date,
       default: null,
       index: true,
+    },
+    estimatedMinutes: {
+      type: Number,
+      min: [1, "Estimated time must be at least 1 minute"],
+      max: [525_600, "Estimated time cannot exceed one year"],
+      default: null,
     },
     completedAt: {
       type: Date,
