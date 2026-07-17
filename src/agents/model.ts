@@ -2,12 +2,19 @@ import { OpenAIChatCompletionsModel, setTracingDisabled } from "@openai/agents";
 import OpenAI from "openai";
 import { AppError, getPositiveIntegerEnv, getRequiredEnv } from "#utils";
 
-export type AiProvider = "ollama" | "anthropic";
+export type AiProvider = "ollama" | "anthropic" | "openrouter";
 
 const providerValue = (process.env.AI_PROVIDER ?? "ollama").toLowerCase();
 
-if (providerValue !== "ollama" && providerValue !== "anthropic") {
-  throw new AppError("AI_PROVIDER must be either 'ollama' or 'anthropic'", 500);
+if (
+  providerValue !== "ollama" &&
+  providerValue !== "anthropic" &&
+  providerValue !== "openrouter"
+) {
+  throw new AppError(
+    "AI_PROVIDER must be either 'ollama', 'anthropic', or 'openrouter'",
+    500,
+  );
 }
 
 export const aiProvider: AiProvider = providerValue;
@@ -38,8 +45,26 @@ const createAnthropicClient = (): { client: OpenAI; modelName: string } => ({
   modelName: getRequiredEnv("ANTHROPIC_MODEL"),
 });
 
-const providerConfig =
-  aiProvider === "ollama" ? createOllamaClient() : createAnthropicClient();
+const createOpenRouterClient = (): { client: OpenAI; modelName: string } => ({
+  client: new OpenAI({
+    baseURL: process.env.OPENROUTER_BASE_URL ?? "https://openrouter.ai/api/v1",
+    apiKey: getRequiredEnv("OPENROUTER_API_KEY"),
+    timeout: requestTimeoutMs,
+    maxRetries: 2,
+  }),
+  modelName: process.env.OPENROUTER_MODEL ?? "deepseek/deepseek-chat-v3.1:free",
+});
+
+const providerClientFactories: Record<
+  AiProvider,
+  () => { client: OpenAI; modelName: string }
+> = {
+  ollama: createOllamaClient,
+  anthropic: createAnthropicClient,
+  openrouter: createOpenRouterClient,
+};
+
+const providerConfig = providerClientFactories[aiProvider]();
 
 // Tracing export is disabled because these runs use non-OpenAI providers.
 setTracingDisabled(true);
