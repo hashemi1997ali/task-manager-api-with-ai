@@ -31,12 +31,6 @@ import { TASK_PRIORITIES, TASK_STATUSES } from "#models";
  *           type: string
  *           format: date-time
  *           example: 2026-07-25T12:00:00+02:00
- *         estimatedMinutes:
- *           type: integer
- *           minimum: 1
- *           maximum: 525600
- *           nullable: true
- *           example: 120
  *     UpdateTaskInput:
  *       type: object
  *       additionalProperties: false
@@ -59,12 +53,6 @@ import { TASK_PRIORITIES, TASK_STATUSES } from "#models";
  *             - type: string
  *               format: date-time
  *             - type: 'null'
- *         estimatedMinutes:
- *           anyOf:
- *             - type: integer
- *               minimum: 1
- *               maximum: 525600
- *             - type: 'null'
  */
 const dateSchema = z.iso
   .datetime({ offset: true })
@@ -78,19 +66,6 @@ const optionalDateSchema = z.preprocess(
 const nullableOptionalDateSchema = z.preprocess(
   (value) => (value === "" ? null : value),
   z.union([dateSchema, z.null()]).optional(),
-);
-
-const optionalEstimatedMinutesSchema = z.preprocess(
-  (value) => (value === "" || value === undefined ? undefined : value),
-  z.coerce.number().int().positive().max(525_600).optional(),
-);
-
-const nullableOptionalEstimatedMinutesSchema = z.preprocess(
-  (value) => (value === "" ? null : value),
-  z.union([
-    z.coerce.number().int().positive().max(525_600),
-    z.null(),
-  ]).optional(),
 );
 
 export const createTaskSchema = z
@@ -109,7 +84,6 @@ export const createTaskSchema = z
     status: z.enum(TASK_STATUSES).optional().default("todo"),
     priority: z.enum(TASK_PRIORITIES).optional().default("medium"),
     dueDate: optionalDateSchema,
-    estimatedMinutes: optionalEstimatedMinutesSchema,
   })
   .strict();
 
@@ -129,7 +103,6 @@ export const updateTaskSchema = z
     status: z.enum(TASK_STATUSES).optional(),
     priority: z.enum(TASK_PRIORITIES).optional(),
     dueDate: nullableOptionalDateSchema,
-    estimatedMinutes: nullableOptionalEstimatedMinutesSchema,
   })
   .strict();
 

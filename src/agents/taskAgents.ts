@@ -1,9 +1,4 @@
-import {
-  Agent,
-  run,
-  tool,
-  type InputGuardrail,
-} from "@openai/agents";
+import { Agent, run, tool, type InputGuardrail } from "@openai/agents";
 import { z } from "zod";
 import { taskAgentModel } from "./model.ts";
 import type {
@@ -31,7 +26,7 @@ General rules:
 - Never claim that a task was created or updated unless the corresponding tool returned success=true.
 - Never use or invent another user's data. Tools are already restricted to the authenticated user.
 - Do not ask about optional fields when the request is already actionable.
-- Interpret expected duration as estimatedMinutes. Convert hours/days into minutes.
+- If the user states an expected duration or deadline (e.g. "in 2 hours", "within 3 days"), compute dueDate by adding that amount to the current runtime time.
 - Convert relative dates into ISO 8601 using the runtime time and timezone.
 - Keep the final response concise but include the task title and the important result.
 `;
@@ -39,7 +34,7 @@ General rules:
 export const taskCreateAgent = new Agent<TaskAgentContext>({
   name: "Task Creation Agent",
   handoffDescription:
-    "Creates a new task and stores optional status, priority, due date, expected duration, and request attachment.",
+    "Creates a new task and stores optional status, priority, due date, and request attachment.",
   instructions: (runContext) => `
 You create tasks for the authenticated user.
 ${commonRules}
@@ -64,7 +59,7 @@ You find and explain one existing task belonging to the authenticated user.
 ${commonRules}
 ${runtimeInstructions(runContext.context)}
 - Use find_user_task for every lookup.
-- Explain status, priority, due date, estimated duration, completion state, and attachment when available.
+- Explain status, priority, due date, completion state, and attachment when available.
 - If multiple tasks match, show a short numbered choice list and ask the user to identify one.
 - If nothing matches, say that clearly; never invent a task.
 `,
@@ -76,7 +71,7 @@ ${runtimeInstructions(runContext.context)}
 export const taskUpdateAgent = new Agent<TaskAgentContext>({
   name: "Task Update Agent",
   handoffDescription:
-    "Edits an existing task's title, description, status, priority, due date, expected duration, or attachment.",
+    "Edits an existing task's title, description, status, priority, due date, or attachment.",
   instructions: (runContext) => `
 You update one existing task belonging to the authenticated user.
 ${commonRules}

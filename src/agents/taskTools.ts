@@ -1,23 +1,11 @@
 import { tool } from "@openai/agents";
-import mongoose, {
-  type HydratedDocument,
-  type QueryFilter,
-} from "mongoose";
+import mongoose, { type HydratedDocument, type QueryFilter } from "mongoose";
 import { z } from "zod";
-import {
-  Task,
-  TASK_PRIORITIES,
-  TASK_STATUSES,
-  type ITask,
-} from "#models";
-import {
-  deleteAttachmentFromCloudinary,
-  uploadAttachment,
-} from "#middlewares";
+import { Task, TASK_PRIORITIES, TASK_STATUSES, type ITask } from "#models";
+import { deleteAttachmentFromCloudinary, uploadAttachment } from "#middlewares";
 import { AppError } from "#utils";
 import type { TaskAgentContext } from "./taskAgentContext.ts";
 
-const MAX_ESTIMATED_MINUTES = 525_600;
 const MAX_TASK_MATCHES = 6;
 const MAX_SUMMARY_TASKS = 20;
 
@@ -32,7 +20,10 @@ const requireContext = (
   const value = context?.context as TaskAgentContext | undefined;
 
   if (!value?.ownerId) {
-    throw new AppError("Task agent context is missing an authenticated user", 500);
+    throw new AppError(
+      "Task agent context is missing an authenticated user",
+      500,
+    );
   }
 
   return value;
@@ -76,7 +67,6 @@ const serializeTask = (task: TaskDocument) => ({
   status: task.status,
   priority: task.priority,
   dueDate: task.dueDate ?? null,
-  estimatedMinutes: task.estimatedMinutes ?? null,
   completedAt: task.completedAt ?? null,
   attachment: task.attachment ?? null,
   createdAt: task.createdAt,
@@ -137,12 +127,6 @@ const createTaskParameters = z.object({
     .string()
     .nullish()
     .describe("ISO 8601 date-time with an offset, or null"),
-  estimatedMinutes: z
-    .number()
-    .int()
-    .positive()
-    .max(MAX_ESTIMATED_MINUTES)
-    .nullish(),
 });
 
 export const createTaskTool = tool({
@@ -166,7 +150,6 @@ export const createTaskTool = tool({
         status,
         priority: input.priority ?? "medium",
         dueDate: parseDate(input.dueDate, "dueDate") ?? null,
-        estimatedMinutes: input.estimatedMinutes ?? null,
         completedAt: status === "done" ? new Date() : null,
         ...(attachment && { attachment }),
       });
@@ -209,10 +192,7 @@ export const findTaskTool = tool({
     const context = requireContext(runContext);
 
     try {
-      const resolution = await resolveOwnedTask(
-        context.ownerId,
-        taskReference,
-      );
+      const resolution = await resolveOwnedTask(context.ownerId, taskReference);
 
       if (resolution.task) {
         return {
@@ -260,13 +240,6 @@ const updateTaskParameters = z.object({
     .nullable()
     .optional()
     .describe("ISO 8601 date-time with an offset, or null to clear it"),
-  estimatedMinutes: z
-    .number()
-    .int()
-    .positive()
-    .max(MAX_ESTIMATED_MINUTES)
-    .nullable()
-    .optional(),
 });
 
 export const updateTaskTool = tool({
@@ -309,8 +282,7 @@ export const updateTaskTool = tool({
         input.description != null ||
         input.status != null ||
         input.priority != null ||
-        input.dueDate !== undefined ||
-        input.estimatedMinutes !== undefined;
+        input.dueDate !== undefined;
 
       if (!hasFieldUpdate && !context.attachment) {
         return {
@@ -329,9 +301,6 @@ export const updateTaskTool = tool({
       if (input.priority != null) task.priority = input.priority;
       if (input.dueDate !== undefined) {
         task.dueDate = parseDate(input.dueDate, "dueDate") ?? null;
-      }
-      if (input.estimatedMinutes !== undefined) {
-        task.estimatedMinutes = input.estimatedMinutes;
       }
       if (input.status != null) {
         task.status = input.status;
@@ -432,8 +401,6 @@ export const summarizeTasksTool = tool({
           medium: number;
           high: number;
           overdue: number;
-          totalEstimatedMinutes: number;
-          remainingEstimatedMinutes: number;
         }>([
           { $match: aggregateMatch },
           {
@@ -477,18 +444,6 @@ export const summarizeTasksTool = tool({
                   ],
                 },
               },
-              totalEstimatedMinutes: {
-                $sum: { $ifNull: ["$estimatedMinutes", 0] },
-              },
-              remainingEstimatedMinutes: {
-                $sum: {
-                  $cond: [
-                    { $ne: ["$status", "done"] },
-                    { $ifNull: ["$estimatedMinutes", 0] },
-                    0,
-                  ],
-                },
-              },
             },
           },
           { $project: { _id: 0 } },
@@ -507,8 +462,6 @@ export const summarizeTasksTool = tool({
         medium: 0,
         high: 0,
         overdue: 0,
-        totalEstimatedMinutes: 0,
-        remainingEstimatedMinutes: 0,
       };
 
       return {
